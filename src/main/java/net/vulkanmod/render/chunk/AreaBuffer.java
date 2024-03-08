@@ -2,12 +2,14 @@ package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.vulkanmod.render.chunk.util.Util;
+import net.vulkanmod.vulkan.DeviceManager;
 import net.vulkanmod.vulkan.memory.*;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
 import static net.vulkanmod.vulkan.queue.Queue.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.TransferQueue;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 public class AreaBuffer {
@@ -118,11 +120,11 @@ public class AreaBuffer {
 
         Buffer buffer = this.allocateBuffer(newSize);
 
-        AreaUploadManager.INSTANCE.swapBuffers(this.buffer.getId(), buffer.getId());
+        AreaUploadManager.INSTANCE.submitUploads();
         AreaUploadManager.INSTANCE.waitAllUploads();
 
         //Sync upload
-        GraphicsQueue.uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
+        TransferQueue.uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
         this.buffer.freeBuffer();
         this.buffer = buffer;
 

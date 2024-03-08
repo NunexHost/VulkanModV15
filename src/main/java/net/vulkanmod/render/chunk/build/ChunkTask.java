@@ -17,7 +17,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Options;
 import net.vulkanmod.interfaces.VisibilitySetExtended;
 import net.vulkanmod.render.chunk.RenderSection;
@@ -27,9 +26,7 @@ import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import javax.annotation.Nullable;
-import javax.swing.text.html.Option;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -179,8 +176,10 @@ public abstract class ChunkTask {
                         }
 
                         bufferBuilder.setBlockAttributes(fluidState.createLegacyBlock());
-
-                        blockRenderDispatcher.renderLiquid(blockPos, renderChunkRegion, bufferBuilder, blockState, fluidState);
+                        //Is Exposed To Air
+                        if (!fluidState.isSource() || isSideExposed(blockPos, renderChunkRegion)) {
+                            blockRenderDispatcher.renderLiquid(blockPos, renderChunkRegion, bufferBuilder, blockState, fluidState);
+                        }
                     }
 
                     if (blockState.getRenderShape() != RenderShape.INVISIBLE) {
@@ -228,22 +227,13 @@ public abstract class ChunkTask {
             return compileResults;
         }
 
+        private static boolean isSideExposed(BlockPos pos, RenderChunkRegion renderChunkRegion) {
+            return isSolid(renderChunkRegion, pos.above()) || isSolid(renderChunkRegion, pos.east()) | isSolid(renderChunkRegion, pos.north()) | isSolid(renderChunkRegion, pos.south()) | isSolid(renderChunkRegion, pos.west());
+        }
 
-/*        private TerrainRenderType compactRenderTypes(TerrainRenderType renderType) {
-
-            if(Options.getGraphicsState()) {
-                if (renderType != TRANSLUCENT) {
-                    renderType = renderType == TRIPWIRE ? TRANSLUCENT : CUTOUT_MIPPED;
-                }
-            }
-            else {
-                if (renderType != TRANSLUCENT && renderType != CUTOUT) {
-                    renderType = renderType == TRIPWIRE ? TRANSLUCENT : CUTOUT_MIPPED;
-                }
-            }
-
-            return renderType;
-        }*/
+        private static boolean isSolid(RenderChunkRegion renderChunkRegion, BlockPos pos) {
+            return renderChunkRegion.getFluidState(pos).isEmpty();
+        }
 
         private <E extends BlockEntity> void handleBlockEntity(CompileResults compileResults, E blockEntity) {
             BlockEntityRenderer<E> blockEntityRenderer = Minecraft.getInstance().getBlockEntityRenderDispatcher().getRenderer(blockEntity);
@@ -311,4 +301,5 @@ public abstract class ChunkTask {
             }
         }
     }
+
 }

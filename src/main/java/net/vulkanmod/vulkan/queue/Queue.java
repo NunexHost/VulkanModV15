@@ -85,7 +85,7 @@ public enum Queue {
             copyRegion.size(size);
             copyRegion.srcOffset(srcOffset);
             copyRegion.dstOffset(dstOffset);
-//            this.BufferBarrier(commandBuffer.getHandle(), srcBuffer, ~0,VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT/*|VK_ACCESS_TRANSFER_WRITE_BIT*/,  VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT/*|VK_PIPELINE_STAGE_TRANSFER_BIT*/, VK_PIPELINE_STAGE_TRANSFER_BIT);
+//            this.GigaBarrier(commandBuffer.getHandle());
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             this.submitCommands(commandBuffer);
