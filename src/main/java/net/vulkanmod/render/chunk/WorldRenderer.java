@@ -216,11 +216,13 @@ public class WorldRenderer {
 //            this.needsUpdate = false;
 
             if (this.needsUpdate) {
-                this.needsUpdate = false;
+
 
                 this.frustum = (((FrustumMixed)(frustum)).customFrustum()).offsetToFullyIncludeCameraCube(8);
                 this.sectionGrid.updateFrustumVisibility(this.frustum);
+                this.lastCameraX = cameraX;
                 this.lastCameraY = cameraY;
+                this.lastCameraZ = cameraZ;
                 this.lastCamRotX = camera.getXRot();
                 this.lastCamRotY = camera.getYRot();
 
@@ -235,7 +237,7 @@ public class WorldRenderer {
                 this.renderRegionCache = new RenderRegionCache();
 
                 if(flag) this.updateRenderChunks();
-
+                this.needsUpdate = false;
                 this.minecraft.getProfiler().pop();
 
             }
@@ -318,9 +320,9 @@ public class WorldRenderer {
 
     private void updateRenderChunks() {
         int maxDirectionsChanges = Initializer.CONFIG.advCulling;
-
-        if(taskDispatcher.getIdleThreadsCount() == 0)
-            /*return;*/this.needsUpdate = true;
+        if(!needsUpdate) return;
+//        if(taskDispatcher.getIdleThreadsCount() == 0)
+//            /*return;*/this.needsUpdate = true;
         //TODO maybe decouple Segments from DrawIndirectCmds: execute ChunkTask then asign a specific section/ via Morton codes, indexes or some other decoupled assignment/indexing implementation.
         // Concerned with the culling. not the drawCallIndirectCommand Contents; at least for Basic Frustum Culling tbh, (i.e. this isn't occlusion Culling, and/or Lods e.g.)_ teselation eg..
         while(this.chunkQueue.hasNext()) {
@@ -354,16 +356,26 @@ public class WorldRenderer {
             //Push/Insert into updateIndexQueue
         }
 
+
+
+        //BFS has atcually finished: no new updates will occut
+
+        //Progresive Sca shouldbe OK as BFS updates from tot botton i
+
+
+        //TODO: move uploads into BFS Queue/Thread instead of Main render thread
+        taskDispatcher.uploadAllPendingUploads();
+        needsUpdate=false;
+
     }
 
     private void addNode(RenderSection renderSection, RenderSection relativeChunk, Direction direction) {
         final byte b = relativeChunk.getChunkArea().inFrustum(relativeChunk.frustumIndex);
-        if (b >= 0) {
+        if (b >= FrustumIntersection.PLANE_NX) {
             return;
         }
-        else if (relativeChunk.getLastFrame() == this.lastFrame) {
-            int d = renderSection.mainDir != direction && !renderSection.isCompletelyEmpty() ?
-                    renderSection.directionChanges + 1 : renderSection.directionChanges;
+        if (relativeChunk.getLastFrame() == this.lastFrame) {
+            int d = renderSection.mainDir != direction? renderSection.directionChanges + 1 : renderSection.directionChanges;
 
             relativeChunk.addDir(direction);
 
@@ -371,7 +383,7 @@ public class WorldRenderer {
 
             return;
         }
-        else if(b == FrustumIntersection.INTERSECT) {
+        if(b == FrustumIntersection.INTERSECT) {
             if(frustum.cubeInFrustum(relativeChunk.xOffset, relativeChunk.yOffset, relativeChunk.zOffset,
                     relativeChunk.xOffset + 16 , relativeChunk.yOffset + 16, relativeChunk.zOffset + 16) >= 0)
                 return;
@@ -412,8 +424,12 @@ public class WorldRenderer {
 
         Profiler2 profiler = Profiler2.getMainProfiler();
         profiler.push("Uploads");
-        if(this.taskDispatcher.uploadAllPendingUploads())
+
+        //TOOD: DrawCmdArray listener/Update pump pergapes...
+
+        if(this.taskDispatcher.hasUploads())
             this.needsUpdate = true;
+        this.chunkAreaQueue.add(getSectionGrid().chunkAreaManager.getChunkArea(1));
         profiler.pop();
         this.minecraft.getProfiler().popPush("schedule_async_compile");
 
@@ -528,6 +544,7 @@ public class WorldRenderer {
 
         final boolean isFancy = Options.getGraphicsState();
         final boolean isTranslucent = terrainRenderType == TRANSLUCENT;
+        final boolean indirectDraw = Initializer.CONFIG.drawIndirect;
 
         VRenderSystem.applyMVP(poseStack.last().pose(), projection);
 
@@ -557,11 +574,12 @@ public class WorldRenderer {
 
                 if(drawBuffers.getAreaBuffer(terrainRenderType) != null && queue.size() != 0) {
                     drawBuffers.bindBuffers(commandBuffer, terrainShader, terrainRenderType, camX, camY, camZ);
-                    drawBuffers.buildDrawBatchesIndirect(queue, terrainRenderType);
+                    if (indirectDraw) drawBuffers.buildDrawBatchesIndirect(queue, terrainRenderType);
+                    else drawBuffers.buildDrawBatchesDirect(queue, terrainRenderType);
                 }
 
             }
-            DrawBuffers.indirectBuffers2.get(terrainRenderType).SubmitAll();
+            if(indirectDraw) DrawBuffers.indirectBuffers2.get(terrainRenderType).SubmitAll();
 //            uniformBuffers.submitUploads();
         }
 
