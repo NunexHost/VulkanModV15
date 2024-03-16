@@ -1,4 +1,4 @@
-Package net.vulkanmod.render.chunk.build;
+package net.vulkanmod.render.chunk.build;
 
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
