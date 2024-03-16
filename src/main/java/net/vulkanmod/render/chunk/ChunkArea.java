@@ -1,22 +1,23 @@
 package net.vulkanmod.render.chunk;
 
 import net.minecraft.core.BlockPos;
+import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.jetbrains.annotations.NotNull;
 import org.joml.FrustumIntersection;
 import org.joml.Vector3i;
 
-import java.nio.BitSet;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 
-public record ChunkArea(int index, Vector3i position, DrawBuffers drawBuffers, EnumMap<TerrainRenderType, DrawParametersQueue> sectionQueue) {
+public record ChunkArea(int index, byte[] inFrustum, Vector3i position, DrawBuffers drawBuffers, EnumMap<TerrainRenderType, StaticQueue<DrawBuffers.DrawParameters>> sectionQueues) {
 
 
     public ChunkArea(int i, Vector3i origin, int minHeight) {
-        this(i, origin, new DrawBuffers(i, origin, minHeight), new EnumMap<>(TerrainRenderType.class));
+        this(i, new byte[64], origin, new DrawBuffers(i, origin, minHeight), new EnumMap<>(TerrainRenderType.class));
         for (TerrainRenderType renderType : TerrainRenderType.VALUES) {
-            sectionQueue.put(renderType, new DrawParametersQueue());
+            sectionQueues.put(renderType, new StaticQueue<>(512));
         }
     }
 
@@ -61,7 +62,7 @@ public record ChunkArea(int index, Vector3i position, DrawBuffers drawBuffers, E
 
                                         int idx = beginIdx + (x2 << 2) + (y2 << 1) + z2;
 
-                                        this.frustumBitSet.set(idx, frustumResult == FrustumIntersection.INTERSECT);
+                                        this.inFrustum[idx] = (byte) frustumResult;
                                     }
 
                                 }
@@ -71,7 +72,7 @@ public record ChunkArea(int index, Vector3i position, DrawBuffers drawBuffers, E
                             int end = beginIdx + 8;
 
                             for(int i = beginIdx; i < end; ++i) {
-                                this.frustumBitSet.set(i, false);
+                                this.inFrustum[i] = (byte) frustumResult;
                             }
                         }
 
@@ -79,7 +80,7 @@ public record ChunkArea(int index, Vector3i position, DrawBuffers drawBuffers, E
                 }
             }
         } else {
-            this.frustumBitSet.clear();
+            Arrays.fill(inFrustum, (byte) frustumResult);
         }
 
     }
@@ -89,9 +90,9 @@ public record ChunkArea(int index, Vector3i position, DrawBuffers drawBuffers, E
     }
 
     public byte getFrustumIndex(int x, int y, int z) {
-        int dx = x - this.position.x();
-        int dy = y - this.position.y();
-        int dz = z - this.position.z();
+        int dx = x - this.position.x;
+        int dy = y - this.position.y;
+        int dz = z - this.position.z;
 
         int i = (dx >> 6 << 5)
                 + (dy >> 6 << 4)
@@ -104,8 +105,8 @@ public record ChunkArea(int index, Vector3i position, DrawBuffers drawBuffers, E
         return (byte) (i + xSub + ySub + zSub);
     }
 
-    public boolean isInFrustum(byte i) {
-        return frustumBitSet.get(i);
+    public byte inFrustum(byte i) {
+        return this.inFrustum[i];
     }
 
     public DrawBuffers getDrawBuffers() {
@@ -115,14 +116,18 @@ public record ChunkArea(int index, Vector3i position, DrawBuffers drawBuffers, E
         return this.drawBuffers;
     }
 
+//    private void allocateDrawBuffers() {
+//        this.drawBuffers = new DrawBuffers(this.index, this.position);
+//    }
+
     public void addSections(RenderSection section) {
         for(var t : section.getCompiledSection().renderTypes) {
-            this.sectionQueue.get(t).add(section.getDrawParameters(t));
+            this.sectionQueues.get(t).add(section.getDrawParameters(t));
         }
     }
 
     public void resetQueue() {
-        this.sectionQueue.forEach((renderType, drawParameters) -> drawParameters.clear());
+        this.sectionQueues.forEach((renderType, drawParameters) -> drawParameters.clear());
     }
 
     public void setPosition(int x, int y, int z) {
@@ -132,4 +137,4 @@ public record ChunkArea(int index, Vector3i position, DrawBuffers drawBuffers, E
     public void releaseBuffers() {
         this.drawBuffers.releaseBuffers();
     }
-}
+    }
