@@ -132,6 +132,3 @@ public record ChunkArea(int index, Vector3i position, DrawBuffers drawBuffers, E
     public void releaseBuffers() {
         this.drawBuffers.releaseBuffers();
     }
-
-    private final BitSet frustumBitSet = new BitSet(64);
-        }
