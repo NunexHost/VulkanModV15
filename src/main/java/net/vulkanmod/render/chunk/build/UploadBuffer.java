@@ -1,10 +1,11 @@
 package net.vulkanmod.render.chunk.build;
 
+import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class UploadBuffer {
 
@@ -12,7 +13,8 @@ public class UploadBuffer {
     public final boolean autoIndices;
     public final boolean indexOnly;
     private final ByteBuffer vertexBuffer;
-    private final IntBuffer indexBuffer;
+    private final ByteBuffer indexBuffer;
+    private final AtomicBoolean released = new AtomicBoolean(false);
 
     //debug
     private boolean released = false;
@@ -23,32 +25,29 @@ public class UploadBuffer {
         this.autoIndices = drawState.sequentialIndex();
         this.indexOnly = drawState.indexOnly();
 
-        if(!this.indexOnly) {
-            this.vertexBuffer = MemoryUtil.memAlloc(renderedBuffer.vertexBuffer().capacity());
-            renderedBuffer.vertexBuffer().copyTo(this.vertexBuffer);
-        } else {
+        if(!this.indexOnly)
+            this.vertexBuffer = Util.createCopy(renderedBuffer.vertexBuffer());
+        else
             this.vertexBuffer = null;
-        }
 
-        if(!drawState.sequentialIndex()) {
-            this.indexBuffer = MemoryUtil.memAlloc(renderedBuffer.indexBuffer().capacity() * 4);
-            renderedBuffer.indexBuffer().copyTo(this.indexBuffer);
-        } else {
+        if(!drawState.sequentialIndex())
+            this.indexBuffer = Util.createCopy(renderedBuffer.indexBuffer());
+        else
             this.indexBuffer = null;
-        }
     }
 
     public int indexCount() { return indexCount; }
 
     public ByteBuffer getVertexBuffer() { return vertexBuffer; }
 
-    public IntBuffer getIndexBuffer() { return indexBuffer; }
+    public ByteBuffer getIndexBuffer() { return indexBuffer; }
 
     public void release() {
+        if(!released.compareAndSet(false, true))
+            return;
         if(vertexBuffer != null)
             MemoryUtil.memFree(vertexBuffer);
         if(indexBuffer != null)
             MemoryUtil.memFree(indexBuffer);
-        this.released = true;
     }
 }
