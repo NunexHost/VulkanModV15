@@ -43,7 +43,7 @@ public class UploadBuffer {
     public ByteBuffer getIndexBuffer() { return indexBuffer; }
 
     public void release() {
-        if(!released.compareAndSet(false, true))
+ //       if(!released.compareAndSet(false, true))
             return;
         if(vertexBuffer != null)
             MemoryUtil.memFree(vertexBuffer);
