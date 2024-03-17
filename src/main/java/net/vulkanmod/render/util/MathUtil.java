@@ -3,11 +3,11 @@ package net.vulkanmod.render.util;
 public class MathUtil {
 
     public static float clamp(float min, float max, float x) {
-        return Math.min(Math.max(x, min), max);
+        return Math.max(min, Math.min(max, x));
     }
 
     public static int clamp(int min, int max, int x) {
-        return Math.min(Math.max(x, min), max);
+        return Math.max(min, Math.min(max, x));
     }
 
     public static float saturate(float x) {
