@@ -17,7 +17,7 @@ public class UploadBuffer {
     private final AtomicBoolean released = new AtomicBoolean(false);
 
     //debug
-    private boolean released = false;
+   // private boolean released = false;
 
     public UploadBuffer(TerrainBufferBuilder.RenderedBuffer renderedBuffer) {
         TerrainBufferBuilder.DrawState drawState = renderedBuffer.drawState();
