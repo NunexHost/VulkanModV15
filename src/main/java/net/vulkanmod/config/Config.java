@@ -18,6 +18,7 @@ public class Config {
     public boolean windowedFullscreen = false;
     public boolean guiOptimizations = false;
     public int advCulling = 2;
+    public boolean useCutouts = true;
     public boolean drawIndirect = true;
     public boolean entityCulling = true;
     public int device = -1;
@@ -25,7 +26,6 @@ public class Config {
     public boolean renderSky = false;
     public boolean renderFog = false;
     public int uncappedMode = VideoResolution.isWayLand()?KHRSurface.VK_PRESENT_MODE_MAILBOX_KHR : KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR;
-    public int vsyncMode = KHRSurface.VK_PRESENT_MODE_FIFO_KHR;
     private static Path path;
 
     private static final Gson GSON = new GsonBuilder()
