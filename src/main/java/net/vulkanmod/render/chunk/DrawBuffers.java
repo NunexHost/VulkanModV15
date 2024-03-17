@@ -73,7 +73,7 @@ public class DrawBuffers {
         if(!buffer.autoIndices) {
             if (this.indexBuffer==null)
                 this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 786432 /*RenderType.SMALL_BUFFER_SIZE*/, INDEX_SIZE);
-            this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.indexBufferSegment, idx);
+            this.indexBuffer.uploadData(buffer.getIndexBuffer(), drawParameters.indexBufferSegment, idx);
 //            drawParameters.firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
             firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
         }
